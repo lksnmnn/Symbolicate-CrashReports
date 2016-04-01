@@ -6,7 +6,9 @@ Written in Perl.
 ## Usage
 
 Currently, the script has to be placed in the following directory:
-```/Applications/Xcode.app/Contents/SharedFrameworks/DTDeviceKitBase.framework/Versions/A/Resources/s```
+```
+/Applications/Xcode.app/Contents/SharedFrameworks/DTDeviceKitBase.framework/Versions/A/Resources/s
+```
 
 Make sure you have your *YOUR_APP.dSYM* and *YOUR_APP.app* files on your machine. The script should find them. The following will symbolicate your crash report and save it to *readable_report.crash*
 
