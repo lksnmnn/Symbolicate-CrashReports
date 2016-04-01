@@ -57,7 +57,8 @@ my %entity2char = (
 #############################
 
 if(!defined($DEVELOPER_DIR)) {
-    die "Error: \"DEVELOPER_DIR\" is not defined";
+    print STDERR "Warning: \"DEVELOPER_DIR\" is not defined, using default location \"/Applications/Xcode.app/Contents/Developer\"\n";
+    $DEVELOPER_DIR = "/Applications/Xcode.app/Contents/Developer";
 }
 
 # We will find these tools once we can guess the right SDK
@@ -86,13 +87,10 @@ sub usage() {
 print STDERR <<EOF;
 usage:
     $0 [-h] [-o <OUTPUT_FILE>] LOGFILE [SYMBOL_PATH ...]
-
     Symbolicates a crashdump LOGFILE which may be "-" to refer to stdin. By default,
     all heuristics will be employed in an attempt to symbolicate all addresses.
     Additional symbol files can be found under specified directories.
-
 Options:
-
     -o  If specified, the symbolicated log will be written to OUTPUT_FILE (defaults to stdout)
     -h  Display this message
     -v  Verbose
@@ -125,8 +123,8 @@ sub getToolPath {
     }
 
     chomp $toolPath;
-    print STDERR "$toolName path is '$toolPath'\n" if $opt{v};
 
+    print STDERR "$toolName path is '$toolPath'\n" if $opt{v};
     return $toolPath;
 }
 
@@ -549,6 +547,7 @@ sub parse_images {
 
         # frameworks and apps (and whatever) may share the same name, so disambiguate
         if ( defined($images{$bundlename}) ) {
+
             # follow the chain of hash items until the end
             my $nextIDKey = $bundlename;
              while ( length($nextIDKey) ) {
@@ -567,6 +566,7 @@ sub parse_images {
         $image{nextID} = "";
 
         $images{$bundlename} = \%image;
+
         }
     }
 
