@@ -1,7 +1,10 @@
 # Symbolicate Crash Reports
-This script is based on Apple's symbolicate script. It now symbolicates Mac and iOS crash reports from PLCrashReporter.
+This script is based on Apple's symbolicate script from 2016. It now symbolicates Mac and iOS crash reports from PLCrashReporter.
 
 Written in Perl.
+
+## Warning
+This script is unmaintained atm and is based on Apples script from 2016. Apple may ship better versions in newer XCode releases, so try to use them if this script isnt working for you.
 
 ## Usage
 
@@ -42,7 +45,7 @@ The script only works within its previous location (the XCode package). If the r
 
 ## Credits
 
-You will find the original script here: 
+You will find the original script here (at least with XCode from 2016): 
 ```
 /Applications/Xcode.app/Contents/SharedFrameworks/DTDeviceKitBase.framework/Versions/A/Resources/symbolicatecrash
 ```
