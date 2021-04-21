@@ -220,13 +220,6 @@ sub getSymbolPathFor_dsymUuid{
 
     my @exec_paths  = ();
     foreach my $exec_name (@exec_names) {
-        my $dsym_path;
-        foreach my $dsymdir (@dsym_paths) {
-            if (index($dsymdir, $exec_name) != -1) {
-                $dsym_path = $dsymdir;
-            }
-        }
-
         #We need to find all of the apps with the given name (both in- and outside of any archive)
         #First, use spotlight to find un-archived apps:
         my $cmd = "mdfind \"kMDItemContentType == com.apple.application-bundle && (kMDItemAlternateNames == '$exec_name.app' || kMDItemDisplayName == '$exec_name' || kMDItemDisplayName == '$exec_name.app')\"";
@@ -244,7 +237,7 @@ sub getSymbolPathFor_dsymUuid{
               $execPath = $exec_name;
             }
             if( -f "$app_bundle/$execPath") {
-                push(@exec_paths, { exec => "$app_bundle/$execPath", dsym => "$dsym_path" });
+                push(@exec_paths, "$app_bundle/$execPath");
             }
         }
 
@@ -254,7 +247,7 @@ sub getSymbolPathFor_dsymUuid{
 
         foreach my $exec_file (split(/\n/, `$cmd`)) {
             if( -f "$exec_file") {
-                push(@exec_paths, { exec => "$exec_file", dsym => "$dsym_path" });
+                push(@exec_paths, "$exec_file");
             }
         }
 
@@ -265,10 +258,10 @@ sub getSymbolPathFor_dsymUuid{
 
             foreach my $app_bundle (split(/\n/, `$cmd`)) {
                 if( -f "$app_bundle/$exec_name") {
-                    push(@exec_paths, { exec => "$app_bundle/$exec_name", dsym => "$dsym_path" });
+                    push(@exec_paths, "$app_bundle/$exec_name");
                 }
                 if( -f "$app_bundle") {
-                    push(@exec_paths, { exec => "$app_bundle", dsym => "$dsym_path" });
+                    push(@exec_paths, "$app_bundle");
                 }
             }
         }
@@ -276,13 +269,13 @@ sub getSymbolPathFor_dsymUuid{
 
     if ( @exec_paths >= 1 ) {
         foreach my $exec (@exec_paths) {
-            if ( !matchesUUID($$exec{exec}, $uuid, $arch) ) {
+            if ( !matchesUUID($exec, $uuid, $arch) ) {
                 print STDERR "UUID of executable is: $uuid\n" if $opt{v};
-                print STDERR "Executable name: $$exec{exec}\n\n" if $opt{v};
-                print STDERR "UUID doesn't match dsym for executable $$exec{exec}\n" if $opt{v};
+                print STDERR "Executable name: $exec\n\n" if $opt{v};
+                print STDERR "UUID doesn't match dsym for executable $exec\n" if $opt{v};
             } else {
-                print STDERR "Found executable $$exec{exec}\n" if $opt{v};
-                return $$exec{dsym};
+                print STDERR "Found executable $exec\n" if $opt{v};
+                return $exec;
             }
         }
     }
