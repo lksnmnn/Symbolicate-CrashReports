@@ -56,11 +56,6 @@ my %entity2char = (
 
 #############################
 
-if(!defined($DEVELOPER_DIR)) {
-    print STDERR "Warning: \"DEVELOPER_DIR\" is not defined, using default location \"/Applications/Xcode.app/Contents/Developer\"\n";
-    $DEVELOPER_DIR = "/Applications/Xcode.app/Contents/Developer";
-}
-
 # We will find these tools once we can guess the right SDK
 my $otool = undef;
 my $atos  = undef;
@@ -107,8 +102,8 @@ sub getToolPath {
         $sdkGuess = "macosx";
     }
 
-    #my $toolPath = `'$DEVELOPER_DIR/usr/bin/xcrun' -sdk $sdkGuess -find $toolName`;
-    my $toolPath = `'$DEVELOPER_DIR/usr/bin/xcrun' -find $toolName`;
+    #my $toolPath = `usr/bin/xcrun -sdk $sdkGuess -find $toolName`;
+    my $toolPath = `/usr/bin/xcrun -find $toolName`;
 
     if (!defined($toolPath) || $? != 0) {
         if ($sdkGuess eq "macosx") {
