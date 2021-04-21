@@ -1013,7 +1013,11 @@ sub output_log($) {
 #############
 
 sub symbolicate_log {
-    my ($file,@extra_search_paths) = @_;
+    my ($file, @extra_search_paths) = @_;
+
+    if (!defined($file)) {
+        usage();
+    }
 
     print STDERR "Symbolicating...\n" if ( $opt{v} );
 
