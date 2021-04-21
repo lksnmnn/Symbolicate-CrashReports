@@ -515,6 +515,23 @@ sub parse_images {
                       'bundlename' => \$4, 'arch' => \$5, 'uuid' => \$6,
                       'path' => \$7);
     }
+    elsif($report_version == 12) {
+        my $code_type = parse_section($log_ref, 'Code Type');
+        $code_type or die "Not found code type.";
+        $default_arch = index(lc($code_type), 'x86-64') == -1 ? 'arm64' : 'x86_64';
+        print STDERR "Architecture $default_arch\n" if $opt{v};
+
+        $pat = '
+            ^\s*(0x[\da-f]*)\s*\-\s*(0x[\da-f]*)\s*                     (?# the range base and extent [1,2] )
+            (\+)?                                                       (?# the application may have a + in front of the name [3] )
+            (\S*)\s*                                                    (?# bundle name [4] )
+            \(\d[0-z?. -\[\]]*\)\s*                                     (?# the versions )
+            <([\dA-F]{8}-[\dA-F]{4}-[\dA-F]{4}-[\dA-F]{4}-[\dA-F]{12})> (?# possible UUID [5] )
+            \s*(\/.*)\s*$                                               (?# first fwdslash to end we hope is path [6] )
+            ';
+        %captures = ( 'base' => \$1, 'extent' => \$2, 'plus' => \$3,
+                      'bundlename' => \$4, 'uuid' => \$5, 'path' => \$6 );
+    }
     else {
         die "Unsupported crash log version: $report_version";
     }
@@ -533,6 +550,7 @@ sub parse_images {
                 #print "image{$key} = $image{$key}\n";
             }
 
+        $image{uuid} =~ s/-//g;
         $image{uuid} = lc $image{uuid};
         $image{arch} = $image{arch} || $default_arch;
 
