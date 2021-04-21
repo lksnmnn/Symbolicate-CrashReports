@@ -253,12 +253,15 @@ sub getSymbolPathFor_dsymUuid{
 
         #Next, try to find paths within any archives
         foreach my $archive_path (@archive_paths) {
-            my $cmd = "find \"$archive_path/Products\" -name \"$exec_name.app\"";
+            my $cmd = "find \"$archive_path/Products\" -name \"$exec_name\"";
             print STDERR "Running $cmd\n" if $opt{v};
 
             foreach my $app_bundle (split(/\n/, `$cmd`)) {
                 if( -f "$app_bundle/$exec_name") {
                     push(@exec_paths, "$app_bundle/$exec_name");
+                }
+                if( -f "$app_bundle") {
+                    push(@exec_paths, "$app_bundle");
                 }
             }
         }
