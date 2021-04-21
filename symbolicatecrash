@@ -735,7 +735,7 @@ sub parse_OSVersion {
 
 sub parse_HardwareModel {
     my ($log_ref) = @_;
-    my $model = parse_section($log_ref, 'Hardware Model');
+    my $model = parse_section($log_ref, 'Hardware Model|Model', regex=>1);
     $model or return undef;
     # HACK: replace the comma in model names because bsd_glob can't handle commas (even escaped ones) in
     # the {} groups
