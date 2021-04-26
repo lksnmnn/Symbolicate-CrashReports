@@ -56,11 +56,6 @@ my %entity2char = (
 
 #############################
 
-if(!defined($DEVELOPER_DIR)) {
-    print STDERR "Warning: \"DEVELOPER_DIR\" is not defined, using default location \"/Applications/Xcode.app/Contents/Developer\"\n";
-    $DEVELOPER_DIR = "/Applications/Xcode.app/Contents/Developer";
-}
-
 # We will find these tools once we can guess the right SDK
 my $otool = undef;
 my $atos  = undef;
@@ -107,8 +102,8 @@ sub getToolPath {
         $sdkGuess = "macosx";
     }
 
-    #my $toolPath = `'$DEVELOPER_DIR/usr/bin/xcrun' -sdk $sdkGuess -find $toolName`;
-    my $toolPath = `'$DEVELOPER_DIR/usr/bin/xcrun' -find $toolName`;
+    #my $toolPath = `usr/bin/xcrun -sdk $sdkGuess -find $toolName`;
+    my $toolPath = `/usr/bin/xcrun -find $toolName`;
 
     if (!defined($toolPath) || $? != 0) {
         if ($sdkGuess eq "macosx") {
@@ -258,12 +253,15 @@ sub getSymbolPathFor_dsymUuid{
 
         #Next, try to find paths within any archives
         foreach my $archive_path (@archive_paths) {
-            my $cmd = "find \"$archive_path/Products\" -name \"$exec_name.app\"";
+            my $cmd = "find \"$archive_path/Products\" -name \"$exec_name\"";
             print STDERR "Running $cmd\n" if $opt{v};
 
             foreach my $app_bundle (split(/\n/, `$cmd`)) {
                 if( -f "$app_bundle/$exec_name") {
                     push(@exec_paths, "$app_bundle/$exec_name");
+                }
+                if( -f "$app_bundle") {
+                    push(@exec_paths, "$app_bundle");
                 }
             }
         }
@@ -520,6 +518,23 @@ sub parse_images {
                       'bundlename' => \$4, 'arch' => \$5, 'uuid' => \$6,
                       'path' => \$7);
     }
+    elsif($report_version == 12) {
+        my $code_type = parse_section($log_ref, 'Code Type');
+        $code_type or die "Not found code type.";
+        $default_arch = index(lc($code_type), 'x86-64') == -1 ? 'arm64' : 'x86_64';
+        print STDERR "Architecture $default_arch\n" if $opt{v};
+
+        $pat = '
+            ^\s*(0x[\da-f]*)\s*\-\s*(0x[\da-f]*)\s*                     (?# the range base and extent [1,2] )
+            (\+)?                                                       (?# the application may have a + in front of the name [3] )
+            (\S*)\s*                                                    (?# bundle name [4] )
+            \(\d[0-z?. -\[\]]*\)\s*                                     (?# the versions )
+            <([\dA-F]{8}-[\dA-F]{4}-[\dA-F]{4}-[\dA-F]{4}-[\dA-F]{12})> (?# possible UUID [5] )
+            \s*(\/.*)\s*$                                               (?# first fwdslash to end we hope is path [6] )
+            ';
+        %captures = ( 'base' => \$1, 'extent' => \$2, 'plus' => \$3,
+                      'bundlename' => \$4, 'uuid' => \$5, 'path' => \$6 );
+    }
     else {
         die "Unsupported crash log version: $report_version";
     }
@@ -538,6 +553,7 @@ sub parse_images {
                 #print "image{$key} = $image{$key}\n";
             }
 
+        $image{uuid} =~ s/-//g;
         $image{uuid} = lc $image{uuid};
         $image{arch} = $image{arch} || $default_arch;
 
@@ -740,7 +756,7 @@ sub parse_OSVersion {
 
 sub parse_HardwareModel {
     my ($log_ref) = @_;
-    my $model = parse_section($log_ref, 'Hardware Model');
+    my $model = parse_section($log_ref, 'Hardware Model|Model', regex=>1);
     $model or return undef;
     # HACK: replace the comma in model names because bsd_glob can't handle commas (even escaped ones) in
     # the {} groups
@@ -1013,7 +1029,11 @@ sub output_log($) {
 #############
 
 sub symbolicate_log {
-    my ($file,@extra_search_paths) = @_;
+    my ($file, @extra_search_paths) = @_;
+
+    if (!defined($file)) {
+        usage();
+    }
 
     print STDERR "Symbolicating...\n" if ( $opt{v} );
 
