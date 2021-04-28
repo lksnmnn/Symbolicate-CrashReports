@@ -253,7 +253,7 @@ sub getSymbolPathFor_dsymUuid{
 
         #Next, try to find paths within any archives
         foreach my $archive_path (@archive_paths) {
-            my $cmd = "find \"$archive_path/Products\" -name \"$exec_name\"";
+            my $cmd = "find \"$archive_path\" -name \"$exec_name\"";
             print STDERR "Running $cmd\n" if $opt{v};
 
             foreach my $app_bundle (split(/\n/, `$cmd`)) {
@@ -268,7 +268,9 @@ sub getSymbolPathFor_dsymUuid{
     }
 
     if ( @exec_paths >= 1 ) {
-        foreach my $exec (@exec_paths) {
+        my @paths = grep(/dSYMs/, @exec_paths);
+        push(@paths, grep(!/dSYMs/, @exec_paths));
+        foreach my $exec (@paths) {
             if ( !matchesUUID($exec, $uuid, $arch) ) {
                 print STDERR "UUID of executable is: $uuid\n" if $opt{v};
                 print STDERR "Executable name: $exec\n\n" if $opt{v};
@@ -328,11 +330,15 @@ sub matchesUUID {
             ## See that it isn't stripped.  Even fully stripped apps have one symbol, so ensure that there is more than one.
             my ($nlocalsym) = $TEST_uuid =~ /nlocalsym\s+([0-9A-Fa-f]+)/;
             my ($nextdefsym) = $TEST_uuid =~ /nextdefsym\s+([0-9A-Fa-f]+)/;
-            my $totalsym = $nextdefsym + $nlocalsym;
-            print STDERR "\nNumber of symbols in $path: $nextdefsym + $nlocalsym = $totalsym\n" if $opt{v};
-            return 1 if ( $totalsym > 1 );
+            if (index($path, "dSYMs") == -1) {
+                my $totalsym = $nextdefsym + $nlocalsym;
+                print STDERR "\nNumber of symbols in $path: $nextdefsym + $nlocalsym = $totalsym\n" if $opt{v};
+                return 1 if ( $totalsym > 1 );
 
-            print STDERR "## $path appears to be stripped, skipping.\n" if $opt{v};
+                print STDERR "## $path appears to be stripped, skipping.\n" if $opt{v};
+            } else {
+                return 1
+            }
         } else {
             print STDERR "Given UUID $uuid for '$path' is really UUID $test\n" if $opt{v};
         }
