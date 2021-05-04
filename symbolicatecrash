@@ -206,7 +206,7 @@ sub getSymbolPathFor_dsymUuid{
 
     @dsym_paths = uniq(@dsym_paths);
 
-    my @exec_names  = map(basename($_), @dsym_paths);
+    my @exec_names = map(basename($_), @dsym_paths);
     @exec_names = uniq(@exec_names);
 
     print STDERR "\@dsym_paths = ( @dsym_paths )\n" if $opt{v};
@@ -215,7 +215,7 @@ sub getSymbolPathFor_dsymUuid{
     my @app_bundles_next_to_dsyms;
     foreach my $dsymdir (@dsym_paths) {
         my ($dsympath) = $dsymdir =~ /(^.*)\.dSYM/i;
-        push(@app_bundles_next_to_dsyms, $dsympath . '.app');
+        push(@app_bundles_next_to_dsyms, $dsympath);
     }
 
     my @exec_paths  = ();
@@ -225,19 +225,20 @@ sub getSymbolPathFor_dsymUuid{
         my $cmd = "mdfind \"kMDItemContentType == com.apple.application-bundle && (kMDItemAlternateNames == '$exec_name.app' || kMDItemDisplayName == '$exec_name' || kMDItemDisplayName == '$exec_name.app')\"";
         print STDERR "Running $cmd\n" if $opt{v};
 
-        my @app_bundles = (@app_bundles_next_to_dsyms, split(/\n/, `$cmd`));
+        my @app_bundles = grep(!/\/dSYMs\//, grep(/$exec_name/, (@app_bundles_next_to_dsyms, split(/\n/, `$cmd`))));
 
         foreach my $app_bundle (@app_bundles) {
            # On Mac OS the path to executable is different
-            my $execPath = "";
-            if ($arch eq "x86_64") {
-              $execPath = "Contents/MacOS/$exec_name";
-            }
-            else {
-              $execPath = $exec_name;
-            }
-            if( -f "$app_bundle/$execPath") {
-                push(@exec_paths, "$app_bundle/$execPath");
+            my $exec_path_ios = $exec_name;
+            my $exec_path_osx = "Contents/MacOS/$exec_name";
+            my $path_ios = "$app_bundle/$exec_path_ios";
+            $path_ios =~ s/[\n\r]//g;
+            my $path_osx = "$app_bundle/$exec_path_osx";
+            $path_osx =~ s/[\n\r]//g;
+            if( -f $path_osx) {
+                push(@exec_paths, $path_osx);
+            } elsif( -f $path_ios) {
+                push(@exec_paths, $path_ios);
             }
         }
 
