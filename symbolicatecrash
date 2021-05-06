@@ -206,7 +206,7 @@ sub getSymbolPathFor_dsymUuid{
 
     @dsym_paths = uniq(@dsym_paths);
 
-    my @exec_names  = map(basename($_), @dsym_paths);
+    my @exec_names = map(basename($_), @dsym_paths);
     @exec_names = uniq(@exec_names);
 
     print STDERR "\@dsym_paths = ( @dsym_paths )\n" if $opt{v};
@@ -215,7 +215,7 @@ sub getSymbolPathFor_dsymUuid{
     my @app_bundles_next_to_dsyms;
     foreach my $dsymdir (@dsym_paths) {
         my ($dsympath) = $dsymdir =~ /(^.*)\.dSYM/i;
-        push(@app_bundles_next_to_dsyms, $dsympath . '.app');
+        push(@app_bundles_next_to_dsyms, $dsympath);
     }
 
     my @exec_paths  = ();
@@ -225,19 +225,20 @@ sub getSymbolPathFor_dsymUuid{
         my $cmd = "mdfind \"kMDItemContentType == com.apple.application-bundle && (kMDItemAlternateNames == '$exec_name.app' || kMDItemDisplayName == '$exec_name' || kMDItemDisplayName == '$exec_name.app')\"";
         print STDERR "Running $cmd\n" if $opt{v};
 
-        my @app_bundles = (@app_bundles_next_to_dsyms, split(/\n/, `$cmd`));
+        my @app_bundles = grep(!/\/dSYMs\//, grep(/$exec_name/, (@app_bundles_next_to_dsyms, split(/\n/, `$cmd`))));
 
         foreach my $app_bundle (@app_bundles) {
            # On Mac OS the path to executable is different
-            my $execPath = "";
-            if ($arch eq "x86_64") {
-              $execPath = "Contents/MacOS/$exec_name";
-            }
-            else {
-              $execPath = $exec_name;
-            }
-            if( -f "$app_bundle/$execPath") {
-                push(@exec_paths, "$app_bundle/$execPath");
+            my $exec_path_ios = $exec_name;
+            my $exec_path_osx = "Contents/MacOS/$exec_name";
+            my $path_ios = "$app_bundle/$exec_path_ios";
+            $path_ios =~ s/[\n\r]//g;
+            my $path_osx = "$app_bundle/$exec_path_osx";
+            $path_osx =~ s/[\n\r]//g;
+            if( -f $path_osx) {
+                push(@exec_paths, $path_osx);
+            } elsif( -f $path_ios) {
+                push(@exec_paths, $path_ios);
             }
         }
 
@@ -253,7 +254,7 @@ sub getSymbolPathFor_dsymUuid{
 
         #Next, try to find paths within any archives
         foreach my $archive_path (@archive_paths) {
-            my $cmd = "find \"$archive_path/Products\" -name \"$exec_name\"";
+            my $cmd = "find \"$archive_path\" -name \"$exec_name\"";
             print STDERR "Running $cmd\n" if $opt{v};
 
             foreach my $app_bundle (split(/\n/, `$cmd`)) {
@@ -268,7 +269,9 @@ sub getSymbolPathFor_dsymUuid{
     }
 
     if ( @exec_paths >= 1 ) {
-        foreach my $exec (@exec_paths) {
+        my @paths = grep(/dSYMs/, @exec_paths);
+        push(@paths, grep(!/dSYMs/, @exec_paths));
+        foreach my $exec (@paths) {
             if ( !matchesUUID($exec, $uuid, $arch) ) {
                 print STDERR "UUID of executable is: $uuid\n" if $opt{v};
                 print STDERR "Executable name: $exec\n\n" if $opt{v};
@@ -328,11 +331,15 @@ sub matchesUUID {
             ## See that it isn't stripped.  Even fully stripped apps have one symbol, so ensure that there is more than one.
             my ($nlocalsym) = $TEST_uuid =~ /nlocalsym\s+([0-9A-Fa-f]+)/;
             my ($nextdefsym) = $TEST_uuid =~ /nextdefsym\s+([0-9A-Fa-f]+)/;
-            my $totalsym = $nextdefsym + $nlocalsym;
-            print STDERR "\nNumber of symbols in $path: $nextdefsym + $nlocalsym = $totalsym\n" if $opt{v};
-            return 1 if ( $totalsym > 1 );
+            if (index($path, "dSYMs") == -1) {
+                my $totalsym = $nextdefsym + $nlocalsym;
+                print STDERR "\nNumber of symbols in $path: $nextdefsym + $nlocalsym = $totalsym\n" if $opt{v};
+                return 1 if ( $totalsym > 1 );
 
-            print STDERR "## $path appears to be stripped, skipping.\n" if $opt{v};
+                print STDERR "## $path appears to be stripped, skipping.\n" if $opt{v};
+            } else {
+                return 1
+            }
         } else {
             print STDERR "Given UUID $uuid for '$path' is really UUID $test\n" if $opt{v};
         }
