@@ -4,14 +4,14 @@ This script is based on Apple's symbolicate script from 2016. It now symbolicate
 Written in Perl.
 
 ## Warning
-This script is unmaintained atm and is based on Apples script from 2016. Apple may ship better versions in newer XCode releases, so try to use them if this script isnt working for you.
+This script is unmaintained atm and is based on Apples script from 2016. Apple may ship better versions in newer Xcode releases, so try to use them if this script isnt working for you.
 
 ## Usage
 
 Currently, the script has to be placed in the following directory:
 ```
-XCode 7.3 and later: /Applications/Xcode.app/Contents/SharedFrameworks/DVTFoundation.framework/Versions/A/Resources/
-XCode 7.2 and earlier: /Applications/Xcode.app/Contents/SharedFrameworks/DTDeviceKitBase.framework/Versions/A/Resources/
+Xcode 7.3 and later: /Applications/Xcode.app/Contents/SharedFrameworks/DVTFoundation.framework/Versions/A/Resources/
+Xcode 7.2 and earlier: /Applications/Xcode.app/Contents/SharedFrameworks/DTDeviceKitBase.framework/Versions/A/Resources/
 ```
 
 Make sure you have your *.xcarchive* file on your machine. The script should find them. The following will symbolicate your crash report and save it to *readable_report.crash*
@@ -43,11 +43,11 @@ If found this article particular useful: [https://possiblemobile.com/2015/03/sym
 
 ## Known Bugs
 
-The script only works within its previous location (the XCode package). If the report is malformed (like iOS crash reports from PLCrashReporter) it could hang. One needs to remove duplicated binaries in the original report.
+The script only works within its previous location (the Xcode package). If the report is malformed (like iOS crash reports from PLCrashReporter) it could hang. One needs to remove duplicated binaries in the original report.
 
 ## Credits
 
-You will find the original script here (at least with XCode from 2016):
+You will find the original script here (at least with Xcode from 2016):
 ```
 /Applications/Xcode.app/Contents/SharedFrameworks/DTDeviceKitBase.framework/Versions/A/Resources/symbolicatecrash
 ```
